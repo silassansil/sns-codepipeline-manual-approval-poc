@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  sns-codepipeline-manual-approval-poc
+
+  Sample SAM Template for sns-codepipeline-manual-approval-poc
+
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  ##############################
+  ## Functions
+  ##############################
+  DeploymentIdManualApprovalFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: deployment_id_manual_approval_handler/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref BlueGreenManualApprovalTopic
+      Policies:
+        - SSMParameterReadPolicy:
+            ParameterName: sns/blue-green-manual-approval-topic
+        - SNSPublishMessagePolicy:
+            TopicName: BlueGreenManualApprovalTopic
+
+  ##############################
+  ## SNS
+  ##############################
+  BlueGreenManualApprovalTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: BlueGreenManualApprovalTopic
+
+  ##############################
+  ## SSM - Parameter Store
+  ##############################
+  SNSTopicArnParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /sns/blue-green-manual-approval-topic
+      Type: String
+      Value: !Ref BlueGreenManualApprovalTopic
+      Description: SNS Arn topic used to publish when blue green deployment need some manual approval.
